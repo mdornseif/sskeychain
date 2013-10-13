@@ -1,3 +1,4 @@
 language: objective-c
 before_install: "sudo gem update --system && sudo gem install bundler && bundle install"
+env: VERBOSE=1
 script: bundle exec rake test --trace

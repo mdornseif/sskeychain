@@ -15,12 +15,15 @@ end
 desc 'Run the tests'
 task :test do
   verbose = ENV['VERBOSE']
-  mac = test_scheme('SSKeychainTests-Mac', verbose)
-  ios = test_scheme('SSKeychainTests-iOS', verbose)
+  mac = test_scheme('SSKeychainTests-Mac', '', verbose)
+  ios = test_scheme('SSKeychainTests-iOS', '-sdk iphonesimulator -destination OS=6.1,name=iPhone', verbose)
 
   puts "\n\n\n" if verbose
   puts "Mac: #{mac == 0 ? 'PASSED'.green : 'FAILED'.red}"
   puts "iOS: #{ios == 0 ? 'PASSED'.green : 'FAILED'.red}"
+  if mac + ios > 0
+    raise "tests failed"
+  end
 end
 
 task :default => :test
@@ -63,16 +66,23 @@ namespace :docs do
   end
 end
 
-def test_scheme(scheme, verbose = false)
-  command = "xcodebuild -project Tests/SSKeychain.xcodeproj -scheme #{scheme} TEST_AFTER_BUILD=YES 2>&1"
+def test_scheme(scheme, destination, verbose = false)
+  verbose = ENV['VERBOSE']
+  #command = "xcodebuild -project Tests/SSKeychain.xcodeproj -scheme #{scheme} 2>&1"
+  #IO.popen(command) { |f| puts f.gets if verbose }
+
+  command = "xcodebuild test -project Tests/SSKeychain.xcodeproj -scheme #{scheme} #{destination} 2>&1"
   IO.popen(command) do |io|
     while line = io.gets do
       puts line if verbose
       if line == "** BUILD SUCCEEDED **\n"
+        return 0
+      elsif line == "** TEST SUCCEEDED **\n"
         return 0
       elsif line == "** BUILD FAILED **\n"
         return 1
       end
     end
   end
+  return 1
 end
